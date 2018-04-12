@@ -1,0 +1,25 @@
+printer1 is a color laser
+	['black', 30]
+	['cyan', 30]
+	['magenta', 88]
+	['yellow', 99]
+	['fuser', 100]
+	['cleaner', -2]
+printer2 is a color laser
+	['black', 19]
+	['cyan', 40]
+	['magenta', 40]
+	['yellow', 6]
+	['fuser', 100]
+	['cleaner', -2]
+plotter1 is a color plotter
+	['gray', 30]
+	['photo black', 68]
+	['matte black', 91]
+	['yellow', 60]
+	['magenta', 71]
+	['cyan', 61]
+Hostname printer3.work.com not found
+printer4 is a mono laser
+	['black', 71]
+	['fuser', 100]
