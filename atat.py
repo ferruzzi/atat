@@ -162,7 +162,7 @@ def loadSupplies(thisPrinter):
 
 for i in Printers:
     short_name = "%s-prt-%s" % (WHID.lower(), i.lower())
-    hostname = "%s.%s.amazon.com" % (short_name, WHID.lower())
+    hostname = "%s.%s.work.com" % (short_name, WHID.lower())
     
     thisPrinter = buildPrinter(short_name, hostname)
     if thisPrinter.style=="none":
