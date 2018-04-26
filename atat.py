@@ -34,14 +34,15 @@ import sys
 #   Custom error messages
 ##########################
 
-def HostNotFound(hostname):
-	print "Hostname %s not found. \n\t Printer may not exist or CommunityString is not correct." % hostname
-	return
+class HostNotFoundException(Exception):
+	def __init__(self, hostname):
+		Exception.__init__(self, f"Hostname {hostname} not found.  \n\t  "
+                                 f"Printer may not exist or CommunityString is not correct.")
 
-def Offline(hostname):
-	print "Unable to connect to printer %s.  Printer may be offline." % hostname
-	return
-
+class OfflineException(Exception):
+    def __init__(self, hostname):
+        Exception.__init__(self, f"Unable to connect to printer {hostname}."
+                                 f"Printer may be offline.")
 
 class Printer():
 	short_name = ""
@@ -55,7 +56,8 @@ class Printer():
 		self.short_name = short_name
 		self.hostname = hostname
 		self.style = getStyle(hostname)
-		if self.style =="none":
+		if self.style is None:
+            print("Style is none, aborting Printer object initialization...")
 			return
 		self.is_mono = getMono(hostname, self.style)
         
@@ -72,26 +74,23 @@ class Printer():
 		# If it is a plotter, it won't have supplies.  Just carry on
 		try:
 			self.supplies = [[sl,""] for sl in self.supplies_list]
-		except:
-			return
+		except Exception as e:
+            print(f"An unexpected error occured while creating supplies list: {e}")
 
-		return
-
-		
 def loadVars(args):
 	global WHID
 	global CommunityString
 	global Printers
 	
 	if (len(args) < 2) or ("ipykernel_launcher.py" in args[0]):
-		print "No parameters passed, using defaults"
+		print("No parameters passed, using defaults")
 	else:
 		try:
 			WHID = args[1]
 			CommunityString = args[2]
 			Printers = args[3].split(", ")
 		except IndexError:
-			print 'Incorrect parameters. \n\tCorrect format is: atat.py [WHID] [CommunityString] ["printer1, printer2,... printer3"]'
+			print('Incorrect parameters. \n\tCorrect format is: atat.py [WHID] [CommunityString] ["printer1, printer2,... printer3"]')
 			sys.exit()
 	return
 
@@ -111,11 +110,10 @@ def getStyle(hostname):
 		elif (varBinds[0][1] == 6):
 			return "plotter"
 		else:
-			Offline(hostname)
-			return "none"
+			raise OfflineException(hostname)
 	except IndexError:
-		HostNotFound(hostname)
-		return "none"
+		raise HostNotFoundException(hostname)
+
 
 def getMono(hostname, style):    
 	if style == "laser":
@@ -185,22 +183,22 @@ def loadSupplies(thisPrinter):
 			thisPrinter.supplies[0][1] = supplyValue
 			continue
 		else:
-			print supplyType
+			print(supplyType)
 	
 	return
 
 def printOutput(printer):
 	for x in range(0,len(printer.colors)):
-		print "\t", printer.colors[x]
+		print("\t", printer.colors[x])
         
-	print "\t-------------------"
+	print("\t-------------------")
     
 	if printer.style == "plotter":
-		print "\tPlotters do not have supplies"
+		print("\tPlotters do not have supplies")
 	else:
 		for x in range(0,len(printer.supplies)):
 			if not(isinstance(printer.supplies[x][1], basestring)):
-				print "\t", printer.supplies[x]   
+				print("\t", printer.supplies[x])
                 
 
 if __name__ == "__main__":
@@ -216,9 +214,11 @@ if __name__ == "__main__":
 		hostname = "%s.%s.amazon.com" % (short_name, WHID.lower())
 
 		thisPrinter = Printer(short_name, hostname)
-		if thisPrinter.style != "none":
-			print "%s is a %s %s" % (thisPrinter.short_name, "mono" if thisPrinter.is_mono else "color", thisPrinter.style)
-		if thisPrinter.style=="none":
+		if thisPrinter.style is not None:
+			print("{shortname} is a {type} {style}".format(shortname=thisPrinter.short_name,
+                                                           type="mono" if thisPrinter.is_mono else "color",
+                                                           style=thisPrinter.style))
+		elif thisPrinter.style is None:
 			continue
 		else:
 			loadColors(thisPrinter)
