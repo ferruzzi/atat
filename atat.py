@@ -1,38 +1,19 @@
 
 # coding: utf-8
-
-# In[1]:
-
-
 #!/usr/bin/python
 
 
-from pysnmp.hlapi import *
 import sys
-
-
-# In[2]:
-
-
-##########################
-#     VARIABLES
-##########################
-
-# REDACTED
-
-# In[3]:
+from pysnmp.hlapi import *
 
 
 ##########################
 #    SHAREABLE VARIABLES
 ##########################
 
-#WHID = "location"
-#CommunityString = "Secret"
-#Printers = ["prt-color-1", "prt-2", "3","mfp-2", "plotter-1"]
-
-
-# In[4]:
+# WHID = "location"
+# CommunityString = "Secret"
+# Printers = ["prt-color-1", "prt-2", "3","mfp-2", "plotter-1"]
 
 
 ##########################
@@ -52,26 +33,6 @@ import sys
 #   .1.3.6.1.2.1.43.11.1.1.8.1.1 = max [int]
 
 
-# In[5]:
-
-
-##########################
-#   Custom error messages
-##########################
-
-def HostNotFound(hostname):
-    print "Hostname %s not found. \n\t Printer may not exist or CommunityString is not correct." % hostname
-    return
-
-def Offline(hostname):
-    print "Unable to connect to printer %s.  Printer may be offline." % hostname
-    return
-
-
-
-# In[6]:
-
-
 class Printer():
     short_name = ""
     hostname = ""
@@ -84,7 +45,8 @@ class Printer():
         self.short_name = short_name
         self.hostname = hostname
         self.style = getStyle(hostname)
-        if self.style =="none":
+        if self.style is None:
+            print "Hostname {host} not found. \n\tPrinter may not exist or CommunityString is not correct.".format(host=hostname)
             return
         self.is_mono = getMono(hostname, self.style)
         
@@ -107,10 +69,9 @@ class Printer():
         return
     
     def __str__(self):
-        return "%s is a %s %s" % (thisPrinter.short_name, "mono" if thisPrinter.is_mono else "color", thisPrinter.style)
-
-
-# In[7]:
+        return "{name} is a {type} {style}".format(name=thisPrinter.short_name, 
+                                                   type="mono" if thisPrinter.is_mono else "color", 
+                                                   style=thisPrinter.style)
 
 
 def loadVars(args):
@@ -131,9 +92,6 @@ def loadVars(args):
     return
 
 
-# In[8]:
-
-
 def getStyle(hostname):
     errorIndication, errorStatus, errorIndex, varBinds = next(
         getCmd(SnmpEngine(),
@@ -149,14 +107,11 @@ def getStyle(hostname):
         elif (varBinds[0][1] == 6):
             return "plotter"
         else:
-            Offline(hostname)
-            return "none"
+            print "{host} is an unknown printer type".format(host=hostname)
+            return None
     except IndexError:
-        HostNotFound(hostname)
-        return "none"
-
-
-# In[9]:
+        print "Hostname {host} not found. \n\tPrinter may not exist or CommunityString is not correct.".format(host=hostname)
+        return None
 
 
 def getMono(hostname, style):    
@@ -173,9 +128,6 @@ def getMono(hostname, style):
         return True
 
 
-# In[10]:
-
-
 def loadColors(thisPrinter):
     for x in range (1, len(thisPrinter.colors)+1):
         errorIndication, errorStatus, errorIndex, varBinds = next(
@@ -190,9 +142,6 @@ def loadColors(thisPrinter):
         if thisPrinter.style == "plotter":
             thisPrinter.colors[x-1][1] = int(thisPrinter.colors[x-1][1]/1.3)
     return
-
-
-# In[11]:
 
 
 def loadSupplies(thisPrinter):
@@ -240,9 +189,6 @@ def loadSupplies(thisPrinter):
     return
 
 
-# In[12]:
-
-
 def printOutput(printer):
     for x in range(0,len(printer.colors)):
         print "\t", printer.colors[x]
@@ -258,9 +204,6 @@ def printOutput(printer):
                 print "\t", printer.supplies[x]
 
 
-# In[13]:
-
-
 if __name__ == "__main__":
 
     loadVars(sys.argv)
@@ -270,17 +213,18 @@ if __name__ == "__main__":
         if i.startswith("prt-"):
             i = i[4:]
 
-        short_name = "%s-prt-%s" % (WHID.lower(), i.lower())
-        hostname = "%s.%s.amazon.com" % (short_name, WHID.lower())
+        short_name = "{whid}-prt-{name}".format(whid=WHID.lower(), name=i.lower())
+        hostname = "{short}.{whid}.amazon.com".format(short=short_name, whid=WHID.lower())
 
         thisPrinter = Printer(short_name, hostname)
-        if thisPrinter.style != "none":
+        if thisPrinter.style is not None:
             print thisPrinter
-        if thisPrinter.style=="none":
+        if thisPrinter.style is None:
             continue
         else:
             loadColors(thisPrinter)
             loadSupplies(thisPrinter)
 
         printOutput(thisPrinter)
-
+        
+print("Script complete")
